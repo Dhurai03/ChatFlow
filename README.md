@@ -1,6 +1,6 @@
 # ChatFlow
 
-A real-time one-to-one messaging web application built as a technical assessment for a Webmaster Intern role. ChatFlow demonstrates practical understanding of React, Node.js, Express, MongoDB, REST APIs, JWT authentication, Socket.IO, and responsive UI design.
+A real-time one-to-one messaging web application.ChatFlow demonstrates practical understanding of React, Node.js, Express, MongoDB, REST APIs, JWT authentication, Socket.IO, and responsive UI design.
 
 ---
 
