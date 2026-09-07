@@ -270,21 +270,7 @@ Query: `?search=name_or_email`
 
 ---
 
-## Known Limitations
 
-- Online presence does not survive server restart (stored in memory only)
-- No file/image sharing — text messages only
-- No push notifications when the app is closed
-- No message editing or deletion
-- Pagination loads in fixed batches of 30; no infinite scroll
 
 ---
 
-## Future Improvements
-
-- Group conversations
-- Image and file attachments
-- Message reactions (emoji)
-- Push notifications (Web Push API)
-- Message search
-- User profile editing (name, avatar)
