@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
 
 // GET /api/conversations
 const getConversations = async (req, res) => {
@@ -10,7 +12,29 @@ const getConversations = async (req, res) => {
       .sort({ lastMessageAt: -1 })
       .lean();
 
-    res.json(conversations);
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          receiver: new mongoose.Types.ObjectId(userId),
+          status: { $ne: 'read' },
+        },
+      },
+      {
+        $group: {
+          _id: '$conversationId',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const unreadMap = new Map(unreadCounts.map((u) => [String(u._id), u.count]));
+
+    const result = conversations.map((conv) => ({
+      ...conv,
+      unreadCount: unreadMap.get(String(conv._id)) || 0,
+    }));
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch conversations.' });
   }
@@ -36,7 +60,12 @@ const createConversation = async (req, res) => {
     }).populate('participants', 'name email').lean();
 
     if (existing) {
-      return res.json(existing);
+      const unreadCount = await Message.countDocuments({
+        conversationId: existing._id,
+        receiver: userId,
+        status: { $ne: 'read' },
+      });
+      return res.json({ ...existing, unreadCount });
     }
 
     const conversation = await Conversation.create({
@@ -47,7 +76,7 @@ const createConversation = async (req, res) => {
       .populate('participants', 'name email')
       .lean();
 
-    res.status(201).json(populated);
+    res.status(201).json({ ...populated, unreadCount: 0 });
   } catch (err) {
     res.status(500).json({ message: 'Failed to create conversation.' });
   }

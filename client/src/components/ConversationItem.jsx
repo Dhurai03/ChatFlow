@@ -10,6 +10,7 @@ function ConversationItem({ conversation, currentUserId, isActive, onClick }) {
   const time = conversation.lastMessageAt
     ? new Date(conversation.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
+  const unreadCount = conversation.unreadCount || 0;
 
   return (
     <li className={`conv-item ${isActive ? 'conv-item--active' : ''}`} onClick={onClick}>
@@ -19,7 +20,10 @@ function ConversationItem({ conversation, currentUserId, isActive, onClick }) {
           <span className="conv-item-name">{other.name}</span>
           <span className="conv-item-time">{time}</span>
         </div>
-        <p className="conv-item-preview">{preview}</p>
+        <div className="conv-item-bottom">
+          <p className="conv-item-preview">{preview}</p>
+          {unreadCount > 0 && <span className="conv-item-badge">{unreadCount}</span>}
+        </div>
       </div>
     </li>
   );

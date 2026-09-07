@@ -68,8 +68,7 @@ function setupSockets(io) {
       const { _id, messageId, conversationId, receiverId, text } = data;
       const actualId = _id || messageId;
 
-      // Emit to everyone in the room (including sender — handled by dedup on client)
-      io.to(conversationId).emit('message:new', {
+      const messagePayload = {
         _id: actualId,
         conversationId,
         sender: socket.user._id,
@@ -77,10 +76,15 @@ function setupSockets(io) {
         text,
         status: 'sent',
         createdAt: data.createdAt || new Date().toISOString(),
-      });
+      };
 
-      // If receiver is online, mark as delivered
+      // Emit to everyone in the room and to the receiver's socket (for background/other conversation updates)
       const receiverSocketId = onlineUsers.get(String(receiverId));
+      if (receiverSocketId) {
+        io.to(conversationId).to(receiverSocketId).emit('message:new', messagePayload);
+      } else {
+        io.to(conversationId).emit('message:new', messagePayload);
+      }
       if (receiverSocketId) {
         try {
           const updated = await Message.findByIdAndUpdate(

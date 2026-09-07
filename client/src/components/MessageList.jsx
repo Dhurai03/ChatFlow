@@ -8,11 +8,9 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
   const prevScrollHeight = useRef(0);
   const prevMessageCount = useRef(0);
 
-  // Auto-scroll to bottom ONLY when a new message is appended (count increases) or typing starts
   useEffect(() => {
     const count = messages.length;
     if (count > prevMessageCount.current || isTyping) {
-      // Only scroll if user is near the bottom (within 200px) or count was 0
       const el = listRef.current;
       if (el) {
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
@@ -24,7 +22,7 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
     prevMessageCount.current = count;
   }, [messages, isTyping]);
 
-  // Preserve scroll position when prepending older messages
+
   useEffect(() => {
     if (loading && listRef.current) {
       prevScrollHeight.current = listRef.current.scrollHeight;

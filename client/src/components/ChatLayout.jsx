@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useConversations } from '../hooks/useConversations';
@@ -10,16 +10,20 @@ function ChatLayout() {
   const { user } = useAuth();
   const { socket } = useSocket();
   const [activeConvId, setActiveConvId] = useState(null);
-  const [showChat, setShowChat] = useState(false); // mobile view toggle
+  const [showChat, setShowChat] = useState(false); 
 
-  const { conversations, loading, error, startConversation } = useConversations(socket);
+  const currentUserId = user?.id || user?._id;
+  const { conversations, loading, error, startConversation, clearUnread } = useConversations(
+    socket,
+    activeConvId,
+    currentUserId
+  );
 
-  // Keep activeConv in sync with the live conversations list
-  // (so lastMessage, timestamps, etc. stay current)
   const activeConv = conversations.find((c) => c._id === activeConvId) || null;
 
   const handleSelectConv = (conv) => {
     setActiveConvId(conv._id);
+    clearUnread(conv._id);
     setShowChat(true);
   };
 
@@ -27,6 +31,7 @@ function ChatLayout() {
     try {
       const conv = await startConversation(selectedUser._id);
       setActiveConvId(conv._id);
+      clearUnread(conv._id);
       setShowChat(true);
     } catch {
       // ignore
@@ -35,6 +40,7 @@ function ChatLayout() {
 
   const handleBack = () => {
     setShowChat(false);
+    setActiveConvId(null);
   };
 
   return (

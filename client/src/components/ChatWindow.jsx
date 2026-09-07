@@ -27,7 +27,7 @@ function ChatWindow({ conversation, onBack }) {
     socket
   );
 
-  // Listen for typing events from other user
+
   useEffect(() => {
     if (!socket || !conversation?._id) return;
 
@@ -59,7 +59,7 @@ function ChatWindow({ conversation, onBack }) {
     };
   }, [socket, conversation?._id, currentUserId]);
 
-  // Reset typing when conversation changes
+
   useEffect(() => {
     setIsTyping(false);
   }, [conversation?._id]);
