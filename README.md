@@ -263,12 +263,10 @@ Query: `?search=name_or_email`
 9. Close Browser 2 → User B should show "Offline" in Browser 1
 
 ---
+## 🎥 Project Demo
 
-## Screenshots
+[▶️ Watch ChatFlow Demo](https://github.com/Dhurai03/ChatFlow/issues/2#issue-5373881739)
 
-> Check screenshots in artifacts directory showing ChatFlow UI, active chat window, conversation list, and responsive layout.
-
----
 
 
 
