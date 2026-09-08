@@ -4,6 +4,8 @@ const {
   sendMessage,
   updateMessageStatus,
   markConversationRead,
+  editMessage,
+  deleteMessage,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,5 +24,11 @@ router.post('/', protect, sendMessage);
 
 // Update single message status (must be after /conversations routes)
 router.patch('/:messageId/status', protect, updateMessageStatus);
+
+// Edit a message (sender only)
+router.patch('/:messageId', protect, editMessage);
+
+// Delete a message — soft delete (sender only)
+router.delete('/:messageId', protect, deleteMessage);
 
 module.exports = router;

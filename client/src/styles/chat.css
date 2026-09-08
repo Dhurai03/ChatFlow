@@ -583,7 +583,399 @@
     pointer-events: none;
   }
 
+
   .chat-back-btn { display: flex; }
 
   .bubble { max-width: 85%; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR SECTION ROW (label + New Group btn)
+   ═══════════════════════════════════════════════════════════ */
+.sidebar-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem 0.2rem 1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: box-shadow 0.18s;
+  display: flex;
+  align-items: center;
+}
+.sidebar-avatar-btn:hover {
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.new-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
+}
+.new-group-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GROUP AVATAR STACK (in conversation list)
+   ═══════════════════════════════════════════════════════════ */
+.conv-group-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  position: relative;
+}
+.group-avatar-stack {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+.group-avatar-stack-item {
+  position: absolute;
+}
+.group-avatar-stack-item:nth-child(1) { top: 0; left: 0; }
+.group-avatar-stack-item:nth-child(2) { top: 0; right: 0; }
+.group-avatar-stack-item:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+.group-icon-inline { font-size: 0.85em; }
+
+/* ═══════════════════════════════════════════════════════════
+   CHAT HEADER — GROUP
+   ═══════════════════════════════════════════════════════════ */
+.chat-header-group-avatar {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.stacked-mini-av {
+  border: 2px solid var(--surface);
+  margin-left: -4px;
+}
+.stacked-mini-av:first-child { margin-left: 0; }
+.status-group { color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════
+   MESSAGE BUBBLE — ACTIONS, EDIT, DELETE, GROUP SENDER
+   ═══════════════════════════════════════════════════════════ */
+.bubble-wrap {
+  position: relative;
+  flex-direction: column;
+}
+
+.bubble-sender-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 3px;
+  margin-left: 2px;
+}
+.bubble-sender-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.bubble-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.bubble-wrap:hover .bubble-actions { opacity: 1; }
+
+.bubble-action-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.bubble-action-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+.bubble-action-btn--danger { border-color: #e74c3c; color: #e74c3c; background: #fff5f5; }
+
+.bubble--deleted {
+  background: var(--bg) !important;
+  border: 1.5px dashed var(--border);
+  box-shadow: none !important;
+}
+.bubble-text--deleted {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.bubble-edited-tag {
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.55);
+  font-style: italic;
+  margin-right: 2px;
+}
+.bubble--in .bubble-edited-tag { color: var(--text-muted); }
+
+/* Inline edit */
+.bubble-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+}
+.bubble-edit-input {
+  width: 100%;
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.88rem;
+  color: #fff;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+}
+.bubble--in .bubble-edit-input { background: var(--bg); border-color: var(--border); color: var(--text); }
+.bubble-edit-actions { display: flex; gap: 0.4rem; }
+.bubble-edit-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.bubble-edit-btn--save { background: #27ae60; color: #fff; }
+.bubble-edit-btn--cancel { background: rgba(255,255,255,0.25); color: #fff; }
+.bubble--in .bubble-edit-btn--cancel { background: var(--bg); color: var(--text-muted); }
+.bubble-edit-hint { font-size: 0.65rem; opacity: 0.55; }
+
+/* ═══════════════════════════════════════════════════════════
+   MODALS (Profile + Create Group)
+   ═══════════════════════════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-card {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease;
+  overflow: hidden;
+}
+
+.profile-modal-card {
+  max-width: 520px;
+}
+
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-muted);
+  padding: 0.35rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-close-btn:hover { background: var(--bg); }
+
+.modal-body,
+.profile-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Profile Avatar Preview ── */
+.profile-avatar-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+.profile-avatar-hint { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ── Preset Avatars ── */
+.preset-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.preset-avatar-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+.preset-avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+.preset-avatar-btn:hover { border-color: var(--primary); transform: scale(1.08); }
+.preset-avatar-btn--active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+/* ── Profile Form Fields ── */
+.profile-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.profile-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.profile-label-counter { font-weight: 400; color: var(--text-muted); }
+.profile-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.profile-input:focus { border-color: var(--primary); }
+.profile-textarea { resize: vertical; min-height: 72px; line-height: 1.45; }
+.profile-error { color: #e74c3c; font-size: 0.82rem; }
+.profile-success { color: #27ae60; font-size: 0.82rem; font-weight: 600; }
+
+/* ── Buttons ── */
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-secondary:hover:not(:disabled) { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Group member chips ── */
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  border-radius: 20px;
+  padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+.group-chip-name { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-chip-remove {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.group-chip-remove:hover { opacity: 1; }
+.group-members-count { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION UTILITY
+   ═══════════════════════════════════════════════════════════ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+

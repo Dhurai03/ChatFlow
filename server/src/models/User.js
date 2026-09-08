@@ -20,6 +20,20 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
     },
+    avatar: {
+      type: String,
+      default: '',
+    },
+    bio: {
+      type: String,
+      default: '',
+      maxlength: [160, 'Bio cannot exceed 160 characters'],
+    },
+    statusMessage: {
+      type: String,
+      default: 'Hey there! I am using ChatFlow.',
+      maxlength: [100, 'Status cannot exceed 100 characters'],
+    },
   },
   { timestamps: true }
 );

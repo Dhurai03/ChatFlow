@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useConversations } from '../hooks/useConversations';
+import { createGroupConversation } from '../services/conversationService';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import EmptyChat from './EmptyChat';
@@ -10,10 +11,10 @@ function ChatLayout() {
   const { user } = useAuth();
   const { socket } = useSocket();
   const [activeConvId, setActiveConvId] = useState(null);
-  const [showChat, setShowChat] = useState(false); 
+  const [showChat, setShowChat] = useState(false);
 
   const currentUserId = user?.id || user?._id;
-  const { conversations, loading, error, startConversation, clearUnread } = useConversations(
+  const { conversations, loading, error, startConversation, clearUnread, reload } = useConversations(
     socket,
     activeConvId,
     currentUserId
@@ -38,6 +39,14 @@ function ChatLayout() {
     }
   };
 
+  const handleCreateGroup = async (name, participantIds) => {
+    const conv = await createGroupConversation(name, participantIds);
+    reload();
+    setActiveConvId(conv._id);
+    clearUnread(conv._id);
+    setShowChat(true);
+  };
+
   const handleBack = () => {
     setShowChat(false);
     setActiveConvId(null);
@@ -53,6 +62,7 @@ function ChatLayout() {
           activeId={activeConvId}
           onSelectConv={handleSelectConv}
           onSelectUser={handleSelectUser}
+          onCreateGroup={handleCreateGroup}
         />
       </div>
 

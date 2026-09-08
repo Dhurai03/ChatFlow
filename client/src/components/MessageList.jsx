@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
 import LoadingSpinner from './LoadingSpinner';
 
-function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadMore, isTyping }) {
+function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadMore, isTyping, isGroup, onEdit, onDelete }) {
   const bottomRef = useRef(null);
   const listRef = useRef(null);
   const prevScrollHeight = useRef(0);
@@ -21,7 +21,6 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
     }
     prevMessageCount.current = count;
   }, [messages, isTyping]);
-
 
   useEffect(() => {
     if (loading && listRef.current) {
@@ -63,6 +62,9 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
             key={msg._id}
             message={msg}
             isMine={isMine}
+            isGroup={isGroup}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         );
       })}

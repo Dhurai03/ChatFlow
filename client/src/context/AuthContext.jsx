@@ -33,13 +33,24 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // proceed with local logout even if server call fails
+    } finally {
+      localStorage.removeItem('token');
+      setUser(null);
+    }
+  };
+
+  // Update user profile locally after a successful profile save
+  const updateUser = (updatedFields) => {
+    setUser((prev) => prev ? { ...prev, ...updatedFields } : prev);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, register, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

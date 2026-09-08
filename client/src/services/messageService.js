@@ -10,3 +10,9 @@ export const sendMessage = (conversationId, receiverId, text) =>
 
 export const markConversationRead = (conversationId) =>
   api.patch(`/messages/conversations/${conversationId}/read`).then((r) => r.data);
+
+export const editMessage = (messageId, text) =>
+  api.patch(`/messages/${messageId}`, { text }).then((r) => r.data);
+
+export const deleteMessage = (messageId) =>
+  api.delete(`/messages/${messageId}`).then((r) => r.data);

@@ -13,37 +13,43 @@ function ChatWindow({ conversation, onBack }) {
   const typingTimerRef = useRef(null);
 
   const currentUserId = user?.id || user?._id;
+  const isGroup = conversation?.isGroup;
 
-  const otherUser = conversation?.participants?.find(
-    (p) => String(p._id) !== String(currentUserId)
-  );
+  // For 1-to-1, find the other participant
+  const otherUser = !isGroup
+    ? conversation?.participants?.find((p) => String(p._id) !== String(currentUserId))
+    : null;
 
   const isOnline = otherUser ? onlineUsers.has(String(otherUser._id)) : false;
 
-  const { messages, loading, error, sending, send, loadMore, hasMore } = useMessages(
+  const { messages, loading, error, sending, send, edit, remove, loadMore, hasMore } = useMessages(
     conversation?._id,
     user,
     otherUser,
-    socket
+    socket,
+    isGroup
   );
 
-
+  // ─── Typing indicators ──────────────────────────────────────────────────
   useEffect(() => {
     if (!socket || !conversation?._id) return;
 
     const handleUserTyping = (data) => {
-      if (data.conversationId === conversation._id && String(data.userId) !== String(currentUserId)) {
+      if (
+        data.conversationId === conversation._id &&
+        String(data.userId) !== String(currentUserId)
+      ) {
         setIsTyping(true);
-
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-        typingTimerRef.current = setTimeout(() => {
-          setIsTyping(false);
-        }, 4000);
+        typingTimerRef.current = setTimeout(() => setIsTyping(false), 4000);
       }
     };
 
     const handleUserStopTyping = (data) => {
-      if (data.conversationId === conversation._id && String(data.userId) !== String(currentUserId)) {
+      if (
+        data.conversationId === conversation._id &&
+        String(data.userId) !== String(currentUserId)
+      ) {
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
         setIsTyping(false);
       }
@@ -58,7 +64,6 @@ function ChatWindow({ conversation, onBack }) {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
   }, [socket, conversation?._id, currentUserId]);
-
 
   useEffect(() => {
     setIsTyping(false);
@@ -85,6 +90,7 @@ function ChatWindow({ conversation, onBack }) {
   return (
     <div className="chat-window">
       <ChatHeader
+        conversation={conversation}
         otherUser={otherUser}
         isOnline={isOnline}
         isTyping={isTyping}
@@ -98,6 +104,9 @@ function ChatWindow({ conversation, onBack }) {
         hasMore={hasMore}
         onLoadMore={loadMore}
         isTyping={isTyping}
+        isGroup={isGroup}
+        onEdit={edit}
+        onDelete={remove}
       />
       <MessageInput
         onSend={send}

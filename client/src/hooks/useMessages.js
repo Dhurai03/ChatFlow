@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getMessages, sendMessage, markConversationRead } from '../services/messageService';
+import {
+  getMessages,
+  sendMessage,
+  markConversationRead,
+  editMessage as apiEditMessage,
+  deleteMessage as apiDeleteMessage,
+} from '../services/messageService';
 
-export function useMessages(conversationId, currentUser, otherUser, socket) {
+export function useMessages(conversationId, currentUser, otherUser, socket, isGroup = false) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +27,12 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
     setMessages((prev) => [...prev, msg]);
   }, []);
 
+  const updateMessage = useCallback((updatedMsg) => {
+    setMessages((prev) =>
+      prev.map((m) => (String(m._id) === String(updatedMsg._id) ? { ...m, ...updatedMsg } : m))
+    );
+  }, []);
+
   const load = useCallback(
     async (pageNum = 1) => {
       if (!conversationId) return;
@@ -37,7 +49,7 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
           newMsgs.forEach((m) => messageIds.current.add(String(m._id)));
           setMessages((prev) => [...newMsgs, ...prev]);
         }
-      } catch (err) {
+      } catch {
         setError('Unable to load messages.');
       } finally {
         setLoading(false);
@@ -61,16 +73,17 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
     messageIds.current = new Set();
     load(1);
 
+    // Feature 5: persist read on open
     markConversationRead(conversationId).catch(() => {});
   }, [conversationId, load]);
 
-  // Join/leave socket rooms — re-runs when socket or conversationId changes
+  // Join/leave socket rooms
   useEffect(() => {
     if (!socket || !conversationId) return;
     socket.emit('join:conversation', conversationId);
 
-    // Notify other user we read the messages
-    if (otherUser) {
+    // Feature 5: notify the other user (1-to-1) that we read
+    if (otherUser && !isGroup) {
       socket.emit('messages:read', {
         conversationId,
         senderId: otherUser._id,
@@ -82,14 +95,13 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
         socket.emit('leave:conversation', conversationId);
       }
     };
-  }, [socket, conversationId, otherUser]);
+  }, [socket, conversationId, otherUser, isGroup]);
 
-  // Listen for incoming new messages
+  // ─── Incoming new messages ──────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (msg) => {
-      // Only process messages for the currently active conversation
       if (String(msg.conversationId) !== String(convIdRef.current)) return;
 
       addMessage(msg);
@@ -97,28 +109,28 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
       const myId = currentUser?.id || currentUser?._id;
       const senderId = msg.sender?._id || msg.sender;
 
-      // If this message was received (not sent by me), acknowledge delivery
+      // If received (not mine), acknowledge delivery and mark as read
       if (String(senderId) !== String(myId)) {
-        socket.emit('message:delivered', {
-          messageId: msg._id,
-          senderId: senderId,
-        });
-        // Mark as read since conversation is open
-        markConversationRead(convIdRef.current).catch(() => {});
-        if (otherUser) {
-          socket.emit('messages:read', {
-            conversationId: convIdRef.current,
-            senderId: otherUser._id,
+        if (!isGroup && msg._id) {
+          socket.emit('message:delivered', {
+            messageId: msg._id,
+            senderId: senderId,
           });
         }
+        // Feature 5: mark as read because the conversation is open
+        markConversationRead(convIdRef.current).catch(() => {});
+        socket.emit('messages:read', {
+          conversationId: convIdRef.current,
+          senderId: senderId,
+        });
       }
     };
 
     socket.on('message:new', handleNewMessage);
     return () => socket.off('message:new', handleNewMessage);
-  }, [socket, currentUser, otherUser, addMessage]);
+  }, [socket, currentUser, otherUser, addMessage, isGroup]);
 
-  // Listen for message status updates
+  // ─── Message status updates (1-to-1 delivered/read ticks) ──────────────
   useEffect(() => {
     if (!socket) return;
 
@@ -128,13 +140,18 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
       );
     };
 
-    const handleRead = ({ conversationId: cid }) => {
+    // Feature 5: reliable read receipt — update ALL my sent messages in this conv to 'read'
+    const handleRead = ({ conversationId: cid, readerId }) => {
       if (String(cid) !== String(convIdRef.current)) return;
       const myId = currentUser?.id || currentUser?._id;
       setMessages((prev) =>
         prev.map((m) => {
           const senderId = m.sender?._id || m.sender;
-          return String(senderId) === String(myId) ? { ...m, status: 'read' } : m;
+          // Only update messages sent by me
+          if (String(senderId) === String(myId) && m.status !== 'read') {
+            return { ...m, status: 'read' };
+          }
+          return m;
         })
       );
     };
@@ -147,25 +164,39 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
     };
   }, [socket, currentUser]);
 
+  // ─── Feature 4: real-time edit/delete updates ───────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdated = (updatedMsg) => {
+      if (String(updatedMsg.conversationId) !== String(convIdRef.current)) return;
+      updateMessage(updatedMsg);
+    };
+
+    socket.on('message:updated', handleUpdated);
+    return () => socket.off('message:updated', handleUpdated);
+  }, [socket, updateMessage]);
+
+  // ─── Send ───────────────────────────────────────────────────────────────
   const send = useCallback(
     async (text) => {
-      if (!conversationId || !otherUser) return;
+      if (!conversationId) return;
       const trimmed = text.trim();
       if (!trimmed) return;
 
       setSending(true);
       try {
-        const msg = await sendMessage(conversationId, otherUser._id, trimmed);
-        // Add to local state immediately (REST response)
+        // For group: no receiverId; for 1-to-1: pass otherUser._id
+        const msg = await sendMessage(conversationId, isGroup ? null : otherUser?._id, trimmed);
         addMessage(msg);
 
-        // Emit via socket so the other user gets it in real-time
         if (socket && socket.connected) {
           socket.emit('message:send', {
             messageId: msg._id,
             conversationId,
-            receiverId: otherUser._id,
+            receiverId: isGroup ? null : otherUser?._id,
             text: msg.text,
+            createdAt: msg.createdAt,
           });
         }
       } catch {
@@ -174,7 +205,49 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
         setSending(false);
       }
     },
-    [conversationId, otherUser, socket, addMessage]
+    [conversationId, otherUser, socket, addMessage, isGroup]
+  );
+
+  // ─── Feature 4: Edit ────────────────────────────────────────────────────
+  const edit = useCallback(
+    async (messageId, newText) => {
+      if (!newText.trim()) return;
+      try {
+        const updated = await apiEditMessage(messageId, newText.trim());
+        updateMessage(updated);
+        // Emit via socket for real-time update to others in the room
+        if (socket && socket.connected) {
+          socket.emit('message:edit', {
+            messageId,
+            conversationId,
+            text: newText.trim(),
+          });
+        }
+      } catch {
+        setError('Failed to edit message.');
+      }
+    },
+    [conversationId, socket, updateMessage]
+  );
+
+  // ─── Feature 4: Delete ──────────────────────────────────────────────────
+  const remove = useCallback(
+    async (messageId) => {
+      try {
+        const updated = await apiDeleteMessage(messageId);
+        updateMessage(updated);
+        // Emit via socket for real-time update to others in the room
+        if (socket && socket.connected) {
+          socket.emit('message:delete', {
+            messageId,
+            conversationId,
+          });
+        }
+      } catch {
+        setError('Failed to delete message.');
+      }
+    },
+    [conversationId, socket, updateMessage]
   );
 
   const loadMore = useCallback(() => {
@@ -185,5 +258,15 @@ export function useMessages(conversationId, currentUser, otherUser, socket) {
     }
   }, [page, totalPages, loading, load]);
 
-  return { messages, loading, error, sending, send, loadMore, hasMore: page < totalPages };
+  return {
+    messages,
+    loading,
+    error,
+    sending,
+    send,
+    edit,
+    remove,
+    loadMore,
+    hasMore: page < totalPages,
+  };
 }

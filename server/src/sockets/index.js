@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const { verifyToken } = require('../services/tokenService');
 const User = require('../models/User');
@@ -34,36 +35,29 @@ function setupSockets(io) {
     // Broadcast to other connected clients that this user is online
     socket.broadcast.emit('user:online', { userId });
 
-    // Join a conversation room
+    // ─── Conversation Rooms ─────────────────────────────────────────────
     socket.on('join:conversation', (conversationId) => {
       socket.join(conversationId);
     });
 
-    // Leave a conversation room
     socket.on('leave:conversation', (conversationId) => {
       socket.leave(conversationId);
     });
 
-    // Typing indicators
+    // ─── Typing Indicators ──────────────────────────────────────────────
     socket.on('typing:start', ({ conversationId }) => {
       if (conversationId) {
-        socket.to(conversationId).emit('user:typing', {
-          userId,
-          conversationId,
-        });
+        socket.to(conversationId).emit('user:typing', { userId, conversationId });
       }
     });
 
     socket.on('typing:stop', ({ conversationId }) => {
       if (conversationId) {
-        socket.to(conversationId).emit('user:stop_typing', {
-          userId,
-          conversationId,
-        });
+        socket.to(conversationId).emit('user:stop_typing', { userId, conversationId });
       }
     });
 
-    // New message sent via socket (for real-time delivery to recipient)
+    // ─── New Message (real-time relay) ──────────────────────────────────
     socket.on('message:send', async (data) => {
       const { _id, messageId, conversationId, receiverId, text } = data;
       const actualId = _id || messageId;
@@ -71,75 +65,129 @@ function setupSockets(io) {
       const messagePayload = {
         _id: actualId,
         conversationId,
-        sender: socket.user._id,
-        receiver: receiverId,
+        sender: { _id: socket.user._id, name: socket.user.name, email: socket.user.email, avatar: socket.user.avatar },
+        receiver: receiverId || null,
         text,
         status: 'sent',
+        isEdited: false,
+        isDeleted: false,
         createdAt: data.createdAt || new Date().toISOString(),
       };
 
-      // Emit to everyone in the room and to the receiver's socket (for background/other conversation updates)
-      const receiverSocketId = onlineUsers.get(String(receiverId));
-      if (receiverSocketId) {
-        io.to(conversationId).to(receiverSocketId).emit('message:new', messagePayload);
-      } else {
-        io.to(conversationId).emit('message:new', messagePayload);
-      }
-      if (receiverSocketId) {
-        try {
-          const updated = await Message.findByIdAndUpdate(
-            actualId,
-            { status: 'delivered' },
-            { new: true }
-          );
-          if (updated) {
-            // Notify sender of delivery
-            const senderSocketId = onlineUsers.get(userId);
-            if (senderSocketId) {
-              io.to(senderSocketId).emit('message:status', {
-                messageId: actualId,
-                status: 'delivered',
-              });
+      // Broadcast to everyone in the conversation room
+      io.to(conversationId).emit('message:new', messagePayload);
+
+      // For 1-to-1: also emit to receiver if not in room, and mark delivered
+      if (receiverId) {
+        const receiverSocketId = onlineUsers.get(String(receiverId));
+        if (receiverSocketId) {
+          // Receiver is online — try to mark as delivered immediately
+          try {
+            const updated = await Message.findByIdAndUpdate(
+              actualId,
+              { status: 'delivered' },
+              { new: true }
+            );
+            if (updated) {
+              const senderSocketId = onlineUsers.get(userId);
+              if (senderSocketId) {
+                io.to(senderSocketId).emit('message:status', {
+                  messageId: actualId,
+                  status: 'delivered',
+                });
+              }
             }
+          } catch {
+            // Non-critical — status update failed silently
           }
-        } catch {
-          // Non-critical — status update failed silently
         }
       }
     });
 
-    // Recipient acknowledges delivery
+    // ─── Recipient acknowledges delivery ────────────────────────────────
     socket.on('message:delivered', async ({ messageId, senderId }) => {
       try {
         await Message.findByIdAndUpdate(messageId, { status: 'delivered' });
         const senderSocketId = onlineUsers.get(String(senderId));
         if (senderSocketId) {
-          io.to(senderSocketId).emit('message:status', {
-            messageId,
-            status: 'delivered',
-          });
+          io.to(senderSocketId).emit('message:status', { messageId, status: 'delivered' });
         }
       } catch {
         // ignore
       }
     });
 
-    // Messages marked as read
+    // ─── Messages read (Feature 5: reliable persistence + room broadcast) ──
     socket.on('messages:read', async ({ conversationId, senderId }) => {
       try {
+        const userObjId = new mongoose.Types.ObjectId(userId);
+
+        // Persist read status for ALL unread messages in the conversation from other users
         await Message.updateMany(
-          { conversationId, receiver: userId, status: { $ne: 'read' } },
-          { status: 'read' }
+          {
+            conversationId: new mongoose.Types.ObjectId(conversationId),
+            sender: { $ne: userObjId },
+            $or: [
+              { status: { $ne: 'read' } },
+              { 'readBy.user': { $ne: userObjId } },
+            ],
+          },
+          {
+            $set: { status: 'read' },
+            $addToSet: { readBy: { user: userObjId, readAt: new Date() } },
+          }
         );
-        const senderSocketId = onlineUsers.get(String(senderId));
-        if (senderSocketId) {
-          io.to(senderSocketId).emit('messages:read', { conversationId });
+
+        // Broadcast read event to entire conversation room so ALL senders get updated ticks
+        io.to(conversationId).emit('messages:read', { conversationId, readerId: userId });
+
+        // Also send directly to specific sender if they're online (for 1-to-1 fallback)
+        if (senderId) {
+          const senderSocketId = onlineUsers.get(String(senderId));
+          if (senderSocketId) {
+            io.to(senderSocketId).emit('messages:read', { conversationId, readerId: userId });
+          }
         }
       } catch {
         // ignore
       }
     });
 
+    // ─── Message Edit (Feature 4) ────────────────────────────────────────
+    socket.on('message:edit', async ({ messageId, conversationId, text }) => {
+      try {
+        const updated = await Message.findOneAndUpdate(
+          { _id: messageId, sender: userId, isDeleted: { $ne: true } },
+          { text: text.trim(), isEdited: true },
+          { new: true }
+        ).populate('sender', 'name email avatar');
+
+        if (updated) {
+          io.to(conversationId).emit('message:updated', updated);
+        }
+      } catch {
+        // ignore
+      }
+    });
+
+    // ─── Message Delete (Feature 4) ─────────────────────────────────────
+    socket.on('message:delete', async ({ messageId, conversationId }) => {
+      try {
+        const updated = await Message.findOneAndUpdate(
+          { _id: messageId, sender: userId, isDeleted: { $ne: true } },
+          { isDeleted: true, deletedAt: new Date(), text: 'This message was deleted' },
+          { new: true }
+        ).populate('sender', 'name email avatar');
+
+        if (updated) {
+          io.to(conversationId).emit('message:updated', updated);
+        }
+      } catch {
+        // ignore
+      }
+    });
+
+    // ─── Disconnect ─────────────────────────────────────────────────────
     socket.on('disconnect', () => {
       onlineUsers.delete(userId);
       io.emit('user:offline', { userId });

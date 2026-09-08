@@ -4,3 +4,6 @@ export const getConversations = () => api.get('/conversations').then((r) => r.da
 
 export const createConversation = (participantId) =>
   api.post('/conversations', { participantId }).then((r) => r.data);
+
+export const createGroupConversation = (name, participantIds) =>
+  api.post('/conversations/group', { name, participantIds }).then((r) => r.data);

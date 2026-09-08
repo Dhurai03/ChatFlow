@@ -28,6 +28,9 @@ const signup = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+        statusMessage: user.statusMessage,
         createdAt: user.createdAt,
       },
     });
@@ -63,6 +66,9 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+        statusMessage: user.statusMessage,
         createdAt: user.createdAt,
       },
     });
@@ -74,11 +80,18 @@ const login = async (req, res) => {
 // GET /api/auth/me
 const getMe = async (req, res) => {
   try {
-    const { _id, name, email, createdAt } = req.user;
-    res.json({ id: _id, name, email, createdAt });
+    const { _id, name, email, avatar, bio, statusMessage, createdAt } = req.user;
+    res.json({ id: _id, name, email, avatar, bio, statusMessage, createdAt });
   } catch (err) {
     res.status(500).json({ message: 'Failed to get user.' });
   }
 };
 
-module.exports = { signup, login, getMe };
+// POST /api/auth/logout
+const logout = async (req, res) => {
+  // JWT is stateless — actual token removal happens client-side.
+  // This endpoint exists as a clean server-side hook (e.g., for future token blocklists).
+  res.json({ message: 'Logged out successfully.' });
+};
+
+module.exports = { signup, login, getMe, logout };
