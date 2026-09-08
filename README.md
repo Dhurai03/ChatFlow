@@ -141,7 +141,7 @@ CLIENT_URL=http://localhost:5173
 | `JWT_SECRET`  | Secret key used to sign and verify JWTs            |
 | `CLIENT_URL`  | Frontend origin for CORS and Socket.IO             |
 
-**Never commit `.env` to version control.**
+
 
 ---
 
