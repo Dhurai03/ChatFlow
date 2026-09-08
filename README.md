@@ -128,10 +128,11 @@ Create `server/.env` (copy from `server/.env.example`):
 
 ```
 PORT=5000
-MONGODB_URI=mongodb+srv://dhuraimurugancb23_db_user:cSZ9mP8c8WYIckRg@chatflowdb.oji1we0.mongodb.net/
-JWT_SECRET=7f4c9a2e8d1b6f3a0c5e9d7a2b8f1c6e4a9d3b7f5c2e8a1d6f0b4c9e7a3d2f8
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority
+JWT_SECRET=your_strong_random_secret_here_min_32_chars
 CLIENT_URL=http://localhost:5173
 ```
+
 
 | Variable      | Description                                        |
 |---------------|----------------------------------------------------|
@@ -330,15 +331,4 @@ Query: `?search=name_or_email`
 
 [▶️ Watch ChatFlow Demo](https://github.com/Dhurai03/ChatFlow/issues/2#issue-5373881739)
 
-
-<<<<<<< HEAD
-
-
 ---
-
-=======
-## 🎥 Project Demo
-
-[▶️ Watch ChatFlow Demo](https://github.com/Dhurai03/ChatFlow/issues/2#issue-5373881739)
-
->>>>>>> c3521cd (edit,delete message feature is added)
