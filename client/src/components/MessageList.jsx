@@ -36,6 +36,28 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
     return <LoadingSpinner text="Loading messages..." />;
   }
 
+  // Helper: normalise a Date to a "YYYY-M-D" key for day comparison
+  const toDayKey = (d) =>
+    d ? `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` : null;
+
+  // Helper: compute the label shown on the date separator pill
+  const getDateLabel = (date) => {
+    const today = new Date();
+    const diffDays = Math.floor(
+      (new Date(today.getFullYear(), today.getMonth(), today.getDate()) -
+       new Date(date.getFullYear(), date.getMonth(), date.getDate())) /
+      86400000
+    );
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return date.toLocaleDateString(undefined, { weekday: 'long' });
+    return date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'long',
+      year: diffDays > 365 ? 'numeric' : undefined,
+    });
+  };
+
   return (
     <div className="message-list" ref={listRef}>
       {hasMore && (
@@ -54,18 +76,32 @@ function MessageList({ messages, loading, error, currentUserId, hasMore, onLoadM
         </div>
       )}
 
-      {messages.map((msg) => {
+      {messages.map((msg, idx) => {
         const senderId = msg.sender?._id || msg.sender;
         const isMine = String(senderId) === String(currentUserId);
+
+        const msgDate = msg.createdAt ? new Date(msg.createdAt) : null;
+        const prevMsg = idx > 0 ? messages[idx - 1] : null;
+        const prevDate = prevMsg?.createdAt ? new Date(prevMsg.createdAt) : null;
+
+        // Show separator when the calendar day changes (or for the very first message)
+        const showSeparator = msgDate && toDayKey(msgDate) !== toDayKey(prevDate);
+
         return (
-          <MessageBubble
-            key={msg._id}
-            message={msg}
-            isMine={isMine}
-            isGroup={isGroup}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+          <div key={msg._id}>
+            {showSeparator && msgDate && (
+              <div className="date-separator">
+                <span className="date-separator-label">{getDateLabel(msgDate)}</span>
+              </div>
+            )}
+            <MessageBubble
+              message={msg}
+              isMine={isMine}
+              isGroup={isGroup}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </div>
         );
       })}
 

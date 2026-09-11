@@ -11,7 +11,6 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// IMPORTANT: specific routes before wildcard routes
 
 // Mark all messages in a conversation as read
 router.patch('/conversations/:conversationId/read', protect, markConversationRead);

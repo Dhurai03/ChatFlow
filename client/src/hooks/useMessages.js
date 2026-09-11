@@ -97,7 +97,7 @@ export function useMessages(conversationId, currentUser, otherUser, socket, isGr
     };
   }, [socket, conversationId, otherUser, isGroup]);
 
-  // ─── Incoming new messages ──────────────────────────────────────────────
+  // ─── Incoming new messages ───────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
 
@@ -109,15 +109,9 @@ export function useMessages(conversationId, currentUser, otherUser, socket, isGr
       const myId = currentUser?.id || currentUser?._id;
       const senderId = msg.sender?._id || msg.sender;
 
-      // If received (not mine), acknowledge delivery and mark as read
+      // If received (not mine), mark as read since the conversation is open
       if (String(senderId) !== String(myId)) {
-        if (!isGroup && msg._id) {
-          socket.emit('message:delivered', {
-            messageId: msg._id,
-            senderId: senderId,
-          });
-        }
-        // Feature 5: mark as read because the conversation is open
+        // Mark as read (stronger than delivered — no need to also emit message:delivered)
         markConversationRead(convIdRef.current).catch(() => {});
         socket.emit('messages:read', {
           conversationId: convIdRef.current,
@@ -128,9 +122,9 @@ export function useMessages(conversationId, currentUser, otherUser, socket, isGr
 
     socket.on('message:new', handleNewMessage);
     return () => socket.off('message:new', handleNewMessage);
-  }, [socket, currentUser, otherUser, addMessage, isGroup]);
+  }, [socket, currentUser, addMessage, isGroup]);
 
-  // ─── Message status updates (1-to-1 delivered/read ticks) ──────────────
+  // ─── Message status updates (1-to-1 delivered/read ticks) ───────────
   useEffect(() => {
     if (!socket) return;
 
@@ -144,10 +138,12 @@ export function useMessages(conversationId, currentUser, otherUser, socket, isGr
     const handleRead = ({ conversationId: cid, readerId }) => {
       if (String(cid) !== String(convIdRef.current)) return;
       const myId = currentUser?.id || currentUser?._id;
+      // Ignore read events triggered by myself (I'm the one who read, not the recipient)
+      if (String(readerId) === String(myId)) return;
       setMessages((prev) =>
         prev.map((m) => {
           const senderId = m.sender?._id || m.sender;
-          // Only update messages sent by me
+          // Only update messages sent by me that haven't been marked read yet
           if (String(senderId) === String(myId) && m.status !== 'read') {
             return { ...m, status: 'read' };
           }

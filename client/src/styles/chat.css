@@ -431,6 +431,41 @@
 .msg-error { text-align: center; padding: 0.5rem; color: #c0392b; font-size: 0.875rem; }
 .msg-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.875rem; }
 
+/* ── Date Separator (WhatsApp-style) ──────────────────────── */
+.date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.9rem 0 0.5rem;
+  position: relative;
+}
+
+.date-separator::before,
+.date-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.6;
+}
+
+.date-separator::before { margin-right: 0.75rem; }
+.date-separator::after  { margin-left:  0.75rem; }
+
+.date-separator-label {
+  background: rgba(91, 94, 244, 0.08);
+  border: 1px solid rgba(91, 94, 244, 0.18);
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.85rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  user-select: none;
+  backdrop-filter: blur(4px);
+}
+
 /* ── Message Bubbles ──────────────────────────────────────── */
 .bubble-wrap {
   display: flex;

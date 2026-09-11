@@ -74,28 +74,30 @@ function setupSockets(io) {
         createdAt: data.createdAt || new Date().toISOString(),
       };
 
-      // Broadcast to everyone in the conversation room
+      // Broadcast to everyone already in the conversation room
       io.to(conversationId).emit('message:new', messagePayload);
 
-      // For 1-to-1: also emit to receiver if not in room, and mark delivered
+      // For 1-to-1: also emit DIRECTLY to the receiver's socket
+      // so they get the real-time notification even if they haven't opened the conversation
       if (receiverId) {
         const receiverSocketId = onlineUsers.get(String(receiverId));
         if (receiverSocketId) {
-          // Receiver is online — try to mark as delivered immediately
+          // Check if receiver is already in the room (avoid duplicate)
+          const receiverSocket = io.sockets.sockets.get(receiverSocketId);
+          const isInRoom = receiverSocket && receiverSocket.rooms.has(conversationId);
+          if (!isInRoom) {
+            // Send directly to the receiver's socket
+            io.to(receiverSocketId).emit('message:new', messagePayload);
+          }
+          // Mark as delivered since receiver is online
           try {
-            const updated = await Message.findByIdAndUpdate(
-              actualId,
-              { status: 'delivered' },
-              { new: true }
-            );
-            if (updated) {
-              const senderSocketId = onlineUsers.get(userId);
-              if (senderSocketId) {
-                io.to(senderSocketId).emit('message:status', {
-                  messageId: actualId,
-                  status: 'delivered',
-                });
-              }
+            await Message.findByIdAndUpdate(actualId, { status: 'delivered' });
+            const senderSocketId = onlineUsers.get(userId);
+            if (senderSocketId) {
+              io.to(senderSocketId).emit('message:status', {
+                messageId: actualId,
+                status: 'delivered',
+              });
             }
           } catch {
             // Non-critical — status update failed silently
@@ -138,14 +140,18 @@ function setupSockets(io) {
           }
         );
 
-        // Broadcast read event to entire conversation room so ALL senders get updated ticks
-        io.to(conversationId).emit('messages:read', { conversationId, readerId: userId });
+        // Notify the senders (everyone in the room except the reader) that messages were read
+        socket.to(conversationId).emit('messages:read', { conversationId, readerId: userId });
 
-        // Also send directly to specific sender if they're online (for 1-to-1 fallback)
+        // Also notify the specific sender directly (handles 1-to-1 where sender isn't in the room)
         if (senderId) {
           const senderSocketId = onlineUsers.get(String(senderId));
           if (senderSocketId) {
-            io.to(senderSocketId).emit('messages:read', { conversationId, readerId: userId });
+            const senderSocket = io.sockets.sockets.get(senderSocketId);
+            const isInRoom = senderSocket && senderSocket.rooms.has(conversationId);
+            if (!isInRoom) {
+              io.to(senderSocketId).emit('messages:read', { conversationId, readerId: userId });
+            }
           }
         }
       } catch {
