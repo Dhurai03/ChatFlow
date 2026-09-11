@@ -10,6 +10,7 @@ function ChatWindow({ conversation, onBack }) {
   const { user } = useAuth();
   const { socket, onlineUsers } = useSocket();
   const [isTyping, setIsTyping] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null);
   const typingTimerRef = useRef(null);
 
   const currentUserId = user?.id || user?._id;
@@ -29,6 +30,11 @@ function ChatWindow({ conversation, onBack }) {
     socket,
     isGroup
   );
+
+  // Clear editing state when conversation changes
+  useEffect(() => {
+    setEditingMessage(null);
+  }, [conversation?._id]);
 
   // ─── Typing indicators ──────────────────────────────────────────────────
   useEffect(() => {
@@ -87,6 +93,22 @@ function ChatWindow({ conversation, onBack }) {
     }
   };
 
+  // ─── Edit handlers ───────────────────────────────────────────────────────
+  // MessageBubble calls this with the full message object
+  const handleStartEdit = (message) => {
+    setEditingMessage(message);
+  };
+
+  // MessageInput calls this with (id, newText)
+  const handleSaveEdit = (messageId, newText) => {
+    edit(messageId, newText);
+    setEditingMessage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+  };
+
   return (
     <div className="chat-window">
       <ChatHeader
@@ -105,7 +127,7 @@ function ChatWindow({ conversation, onBack }) {
         onLoadMore={loadMore}
         isTyping={isTyping}
         isGroup={isGroup}
-        onEdit={edit}
+        onEdit={handleStartEdit}
         onDelete={remove}
       />
       <MessageInput
@@ -113,6 +135,9 @@ function ChatWindow({ conversation, onBack }) {
         onTyping={handleStartTyping}
         onStopTyping={handleStopTyping}
         disabled={sending}
+        editingMessage={editingMessage}
+        onSaveEdit={handleSaveEdit}
+        onCancelEdit={handleCancelEdit}
       />
     </div>
   );

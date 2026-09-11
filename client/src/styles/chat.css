@@ -715,6 +715,14 @@
   flex-direction: column;
 }
 
+.bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.bubble-mine .bubble-row  { justify-content: flex-end; }
+.bubble-theirs .bubble-row { justify-content: flex-start; }
+
 .bubble-sender-row {
   display: flex;
   align-items: center;
@@ -728,29 +736,77 @@
   color: var(--primary);
 }
 
-.bubble-actions {
+/* ── WhatsApp-style chevron + context menu ── */
+.bubble-menu-wrap {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 10;
+}
+
+.bubble-chevron {
+  background: rgba(0, 0, 0, 0.18);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.bubble-wrap:hover .bubble-actions { opacity: 1; }
-
-.bubble-action-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 3px 6px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
   cursor: pointer;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  padding: 0;
+  flex-shrink: 0;
 }
-.bubble-action-btn:hover { background: var(--primary-light); border-color: var(--primary); }
-.bubble-action-btn--danger { border-color: #e74c3c; color: #e74c3c; background: #fff5f5; }
+.bubble:hover .bubble-chevron {
+  opacity: 1;
+}
+.bubble-chevron:hover {
+  background: rgba(0, 0, 0, 0.32);
+}
 
+.bubble-context-menu {
+  position: absolute;
+  top: 28px;
+  min-width: 150px;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16), 0 1px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  animation: ctx-pop 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 200;
+}
+.bubble-context-menu--right { right: 0; }
+.bubble-context-menu--left  { left: 0; }
+
+@keyframes ctx-pop {
+  from { opacity: 0; transform: scale(0.85) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.62rem 1rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: inherit;
+  text-align: left;
+}
+.ctx-item:hover { background: var(--bg); }
+.ctx-item + .ctx-item { border-top: 1px solid var(--border); }
+.ctx-item--danger { color: #e74c3c; }
+.ctx-item--danger:hover { background: #fff5f5; }
+
+/* ── Deleted bubble style ── */
 .bubble--deleted {
   background: var(--bg) !important;
   border: 1.5px dashed var(--border);
@@ -762,6 +818,7 @@
   font-size: 0.85rem;
 }
 
+/* ── Edited tag ── */
 .bubble-edited-tag {
   font-size: 0.62rem;
   color: rgba(255,255,255,0.55);
@@ -770,40 +827,136 @@
 }
 .bubble--in .bubble-edited-tag { color: var(--text-muted); }
 
-/* Inline edit */
-.bubble-edit-wrap {
+/* ─────────────────────────────────────────────────────────────
+   EDIT BAR (WhatsApp pencil bar above input)
+   ───────────────────────────────────────────────────────────── */
+.message-input-area {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 200px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
-.bubble-edit-input {
-  width: 100%;
-  background: rgba(255,255,255,0.2);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.88rem;
-  color: #fff;
-  resize: none;
-  outline: none;
-  font-family: inherit;
+
+.edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1.25rem 0.45rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--primary-light);
+  animation: slideDown 0.15s ease;
 }
-.bubble--in .bubble-edit-input { background: var(--bg); border-color: var(--border); color: var(--text); }
-.bubble-edit-actions { display: flex; gap: 0.4rem; }
-.bubble-edit-btn {
+
+@keyframes slideDown {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.edit-bar-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.edit-bar-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.edit-bar-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.03em;
+}
+.edit-bar-preview {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-bar-cancel {
+  background: none;
   border: none;
-  border-radius: 6px;
-  padding: 0.25rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
-.bubble-edit-btn--save { background: #27ae60; color: #fff; }
-.bubble-edit-btn--cancel { background: rgba(255,255,255,0.25); color: #fff; }
-.bubble--in .bubble-edit-btn--cancel { background: var(--bg); color: var(--text-muted); }
-.bubble-edit-hint { font-size: 0.65rem; opacity: 0.55; }
+.edit-bar-cancel:hover { background: var(--border); color: var(--text); }
+
+/* Input wrap sits inside .message-input-area now (no border-top, that's on area) */
+.message-input-area .message-input-wrap {
+  border-top: none;
+}
+
+/* Edit-mode send button turns into a green checkmark */
+.send-btn--edit {
+  background: #27ae60;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.send-btn--edit:hover:not(:disabled) { background: #219a52; }
+
+/* ─────────────────────────────────────────────────────────────
+   DELETE MODAL (WhatsApp action sheet)
+   ───────────────────────────────────────────────────────────── */
+.delete-modal {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+  width: 100%;
+  max-width: 340px;
+  overflow: hidden;
+  animation: slideUp 0.18s ease;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.delete-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  padding: 0 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.delete-modal-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.delete-modal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+.delete-modal-btn:last-child { border-bottom: none; }
+.delete-modal-btn:hover { background: var(--bg); }
+.delete-modal-btn--everyone { color: #e74c3c; font-weight: 600; }
+.delete-modal-btn--me       { color: var(--text); }
+.delete-modal-btn--cancel   { color: var(--text-muted); font-size: 0.875rem; }
+
 
 /* ═══════════════════════════════════════════════════════════
    MODALS (Profile + Create Group)
