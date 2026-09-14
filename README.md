@@ -2,6 +2,13 @@
 
 A real-time messaging web application supporting one-to-one and group conversations. ChatFlow demonstrates practical understanding of React, Node.js, Express, MongoDB, REST APIs, JWT authentication, Socket.IO, and responsive UI design.
 
+## 🎥 Project Demo
+Sign Up and search user to chat
+[▶️ Watch ChatFlow Demo](https://github.com/Dhurai03/ChatFlow/issues/2#issue-5373881739)
+
+Real Time Chatting with 2 user
+[▶️ Watch ChatFlow Demo-2](https://github.com/Dhurai03/ChatFlow/issues/3#issue-5439494050)
+
 ---
 
 ## Features
@@ -327,11 +334,5 @@ Query: `?search=name_or_email`
 12. Click "New Group" → create a group with both users → verify group messaging
 
 ---
-## 🎥 Project Demo
-Sign Up and search user to chat
-[▶️ Watch ChatFlow Demo](https://github.com/Dhurai03/ChatFlow/issues/2#issue-5373881739)
-
-Real Time Chatting with 2 user
-[▶️ Watch ChatFlow Demo-2](https://github.com/Dhurai03/ChatFlow/issues/3#issue-5439494050)
 
 ---
