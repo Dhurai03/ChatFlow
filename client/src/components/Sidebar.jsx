@@ -12,9 +12,7 @@ function Sidebar({ conversations, loading, error, activeId, onSelectConv, onSele
   const [showCreateGroup, setShowCreateGroup] = useState(false);
 
   const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      await logout();
-    }
+    await logout();
   };
 
   return (
